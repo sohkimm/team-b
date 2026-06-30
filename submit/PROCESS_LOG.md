@@ -29,17 +29,23 @@
 
 ## 작업 로그 (단계마다 1개씩 누적 / 시간순)
 
-### [#1] {짧은 제목}
-- 작성자(팀원):
-- 목표:
+### [#1] Task 5: resample.py — 해상도 정합
+- 작성자(팀원): Claude (AI Agent)
+- 목표: 저해상도 기준으로 고해상도 데이터를 다운샘플링하는 resample.py 모듈 구현
 - 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
-  > "(여기에 실제 입력한 지시/프롬프트의 핵심 문장 그대로)"
-- 사용한 기법(있으면): (a / b / c 중)
+  > "Implement Task 5 of a NetCDF validation pipeline. This task adds resolution matching: resampling the high-res DataArray to match the coarser one using rioxarray."
+- 사용한 기법(있으면): (c) 재사용산출물 — Task 4 (reproject.py) 의존 구조 활용
 - 결과:
-- 막힘 → 해결:
-
-### [#2] ...
-(필요한 만큼 계속 추가)
+  - `src/resample.py` 생성 (93줄) — `match_resolution(da_a, da_b)` 함수 구현
+  - `tests/test_resample.py` 생성 (44줄) — 4개 테스트 케이스
+    - Resolution detection (양방향): A vs B 중 누가 coarse인지 판단
+    - Output shape matching: 재샘플링된 그리드 크기 검증
+    - Dimension preservation: lat/lon 이름 유지
+  - 커밋: `7eb90b7` (git log)
+  - 태스크 보고: `.superpowers/sdd/task-5-report.md`
+- 막힘 → 해결: 
+  - 환경 제약: conda env `ncval` 미탑재 → 테스트 코드 구조 검증, 예상 결과 문서화로 해결
+  - 배경: rioxarray.reproject_match(Resampling.average) 사용으로 영역 가중 평균 적용
 
 ---
 

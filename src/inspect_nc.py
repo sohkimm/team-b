@@ -1,63 +1,75 @@
-from dataclasses import dataclass
 import numpy as np
-
-_LAT_NAMES = ("latitude", "lat", "nav_lat", "y")
-_LON_NAMES = ("longitude", "lon", "nav_lon", "x")
+import xarray as xr
 
 
-@dataclass
-class InspectReport:
-    grid_kind: str
-    dlat: float
-    dlon: float
-    lat_name: str
-    lon_name: str
-    var_name: str
-    units: str
-    time_len: int
-
-
-def is_regular_grid(lat, lon, rtol=1e-4):
-    lat = np.asarray(lat)
-    lon = np.asarray(lon)
+def is_regular_grid(lat: np.ndarray, lon: np.ndarray, rtol: float = 1e-4) -> bool:
     if lat.ndim != 1 or lon.ndim != 1:
         return False
-    dlat, dlon = np.diff(lat), np.diff(lon)
-    if dlat.size == 0 or dlon.size == 0:
-        return False
-    return bool(np.allclose(dlat, dlat[0], rtol=rtol)
-                and np.allclose(dlon, dlon[0], rtol=rtol))
+    if len(lat) < 2 or len(lon) < 2:
+        return True
+    dlat = np.diff(lat)
+    dlon = np.diff(lon)
+    return (np.allclose(dlat, dlat[0], rtol=rtol) and
+            np.allclose(dlon, dlon[0], rtol=rtol))
 
 
-def detect_salinity_var(ds, override=None):
-    if override is not None:
-        return override
-    for name, var in ds.data_vars.items():
-        if var.attrs.get("standard_name") == "sea_surface_salinity":
-            return name
-    raise ValueError(
-        f"sea_surface_salinity 변수 자동탐지 실패. 후보: {list(ds.data_vars)} "
-        f"— --var-a/--var-b 로 지정하세요.")
+def _find_coord(ds: xr.Dataset, names: list) -> np.ndarray:
+    for name in names:
+        if name in ds.coords:
+            return ds.coords[name].values
+    raise KeyError(f"좌표 변수를 찾을 수 없음. 시도한 이름: {names}")
 
 
-def _find_coord(ds, names):
-    for n in names:
-        if n in ds.coords or n in ds.variables:
-            return n
-    raise ValueError(f"좌표 미발견: {names} 중 없음 (있는 좌표: {list(ds.coords)})")
+def _detect_crs(ds: xr.Dataset) -> tuple:
+    for var in ds.data_vars:
+        gm_name = ds[var].attrs.get("grid_mapping")
+        if gm_name and gm_name in ds:
+            proj = ds[gm_name].attrs.get("grid_mapping_name", "latitude_longitude")
+            if proj == "latitude_longitude":
+                return "WGS84", proj
+            return proj, proj
+    for attr in ("crs_wkt", "proj4", "spatial_ref"):
+        if attr in ds.attrs:
+            return ds.attrs[attr], ds.attrs[attr]
+    return "WGS84", "latitude_longitude"
 
 
-def describe(ds, var_override=None):
-    lat_name = _find_coord(ds, _LAT_NAMES)
-    lon_name = _find_coord(ds, _LON_NAMES)
-    lat = np.asarray(ds[lat_name].values)
-    lon = np.asarray(ds[lon_name].values)
+def inspect(ds: xr.Dataset) -> dict:
+    lat = _find_coord(ds, ["lat", "latitude", "y"])
+    lon = _find_coord(ds, ["lon", "longitude", "x"])
+
+    proc = ds.attrs.get("processing_level", "")
+    cdm = ds.attrs.get("cdm_data_type", "")
+    if "L2" in proc or cdm == "Swath":
+        data_type = "위성 L2 스와스"
+    elif "L3" in proc or cdm == "Grid":
+        data_type = "위성 L3 격자"
+    elif "L4" in proc:
+        data_type = "위성 L4 합성장"
+    elif "model" in ds.attrs.get("source", "").lower():
+        data_type = "모델"
+    else:
+        data_type = "미분류"
+
     regular = is_regular_grid(lat, lon)
-    grid_kind = "GEOGRAPHIC" if regular else "IRREGULAR"
-    dlat = float(abs(lat[1] - lat[0])) if lat.ndim == 1 and lat.size > 1 else float("nan")
-    dlon = float(abs(lon[1] - lon[0])) if lon.ndim == 1 and lon.size > 1 else float("nan")
-    var_name = detect_salinity_var(ds, override=var_override)
-    units = ds[var_name].attrs.get("units", "")
-    time_len = int(ds.sizes.get("time", 1))
-    return InspectReport(grid_kind, dlat, dlon, lat_name, lon_name,
-                         var_name, units, time_len)
+    grid_type = "정규격자" if regular else "비정규격자"
+
+    dlat = float(abs(np.diff(lat).mean())) if len(lat) > 1 else None
+    dlon = float(abs(np.diff(lon).mean())) if len(lon) > 1 else None
+
+    crs, proj_name = _detect_crs(ds)
+    time_res = ds.attrs.get("time_coverage_duration",
+               ds.attrs.get("temporal_resolution", "미확인"))
+
+    return {
+        "data_type": data_type,
+        "grid_type": grid_type,
+        "is_regular": regular,
+        "dlat": dlat,
+        "dlon": dlon,
+        "lat": lat,
+        "lon": lon,
+        "crs": crs,
+        "proj_name": proj_name,
+        "time_res": time_res,
+    }

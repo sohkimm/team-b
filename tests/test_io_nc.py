@@ -1,19 +1,18 @@
-import numpy as np
 import pytest
-import xarray as xr
 from src.io_nc import open_nc
+import xarray as xr
 
+def test_open_valid_nc(nc_high_res):
+    path, _ = nc_high_res
+    ds = open_nc(path)
+    assert isinstance(ds, xr.Dataset)
 
-def test_open_nc_rejects_non_netcdf(tmp_path):
-    p = tmp_path / "notnc.txt"
-    p.write_text("hello")
-    with pytest.raises(ValueError, match="nc 파일만 지원"):
+def test_open_invalid_extension(tmp_path):
+    p = tmp_path / "data.txt"
+    p.write_text("not netcdf")
+    with pytest.raises(ValueError, match="NetCDF"):
         open_nc(str(p))
 
-
-def test_open_nc_opens_real_netcdf(tmp_path):
-    p = tmp_path / "sample.nc"
-    xr.Dataset({"v": ("x", np.arange(3.0))}).to_netcdf(p)
-    ds = open_nc(str(p))
-    assert "v" in ds
-    ds.close()
+def test_open_nonexistent_file():
+    with pytest.raises((ValueError, FileNotFoundError)):
+        open_nc("/nonexistent/path/file.nc")

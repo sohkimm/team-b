@@ -1,37 +1,39 @@
 import numpy as np
 import pytest
 import xarray as xr
-from src.inspect_nc import is_regular_grid, detect_salinity_var, describe
+from src.inspect_nc import inspect, is_regular_grid
 
 
 def test_is_regular_grid_true():
-    lat = np.arange(0, 5, 0.5)
-    lon = np.arange(100, 110, 0.5)
+    lat = np.arange(24.0, 38.0, 0.25)
+    lon = np.arange(117.0, 131.0, 0.25)
     assert is_regular_grid(lat, lon) is True
 
 
 def test_is_regular_grid_false_2d():
-    lat = np.zeros((3, 3))
-    lon = np.zeros((3, 3))
+    lat = np.array([[24.0, 24.0], [25.0, 25.0]])
+    lon = np.array([[117.0, 118.0], [117.0, 118.0]])
     assert is_regular_grid(lat, lon) is False
 
 
-def test_detect_salinity_picks_sss_not_density():
-    ds = xr.Dataset({
-        "sss": ("x", np.arange(3.0), {"standard_name": "sea_surface_salinity"}),
-        "ssd": ("x", np.arange(3.0), {"standard_name": "sea_surface_density"}),
-    })
-    assert detect_salinity_var(ds) == "sss"
+def test_is_regular_grid_irregular():
+    lat = np.array([24.0, 25.0, 27.0, 31.0])
+    lon = np.arange(117.0, 131.0, 0.25)
+    assert is_regular_grid(lat, lon) is False
 
 
-def test_detect_salinity_override():
-    ds = xr.Dataset({"foo": ("x", np.arange(3.0))})
-    assert detect_salinity_var(ds, override="foo") == "foo"
+def test_inspect_returns_dict(nc_low_res):
+    _, ds = nc_low_res
+    result = inspect(ds)
+    assert isinstance(result, dict)
+    for key in ["data_type", "grid_type", "is_regular", "dlat", "dlon", "crs"]:
+        assert key in result, f"누락 키: {key}"
 
 
-def test_describe_geographic(make_sss_ds):
-    rep = describe(make_sss_ds)
-    assert rep.grid_kind == "GEOGRAPHIC"
-    assert np.isclose(rep.dlat, 0.25)
-    assert rep.var_name == "sea_surface_salinity"
-    assert rep.time_len == 1
+def test_inspect_l3_grid(nc_low_res):
+    _, ds = nc_low_res
+    result = inspect(ds)
+    assert result["data_type"] == "위성 L3 격자"
+    assert result["is_regular"] is True
+    assert abs(result["dlat"] - 0.25) < 1e-4
+    assert result["crs"] == "WGS84"

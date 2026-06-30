@@ -1,7 +1,11 @@
+import os
+import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import xarray as xr
 
 try:
     import cartopy.crs as ccrs
@@ -49,30 +53,82 @@ def plot_map(da, title="", save_path=None, vmin=25, vmax=40):
     return fig
 
 
-def make_scatter(eval_da, ref_da, stat, title="", lim=None):
-    """1:1 산점도. lim=(lo,hi)를 주면 x·y 축을 동일 범위로 고정(두 그림 비교용)."""
-    e = np.asarray(getattr(eval_da, "values", eval_da)).ravel()
-    r = np.asarray(getattr(ref_da, "values", ref_da)).ravel()
-    mask = ~np.isnan(e) & ~np.isnan(r)
-    e, r = e[mask], r[mask]
+def save_map(da: xr.DataArray, path: str, title: str) -> None:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": ccrs.PlateCarree()}, figsize=(8, 6)
+    )
+    da.plot(ax=ax, transform=ccrs.PlateCarree(), cmap="viridis",
+            add_colorbar=True, robust=True)
+    ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
+    ax.add_feature(cfeature.BORDERS, linewidth=0.3)
+    ax.set_title(title, fontsize=12)
+    gl = ax.gridlines(draw_labels=True, linewidth=0.3, linestyle="--")
+    gl.top_labels = False
+    gl.right_labels = False
+    plt.tight_layout()
+    plt.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close()
+
+
+def save_scatter(
+    ref: xr.DataArray,
+    eval_da: xr.DataArray,
+    stats_dict: dict,
+    path: str,
+    title: str,
+) -> None:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    r = ref.values.flatten().astype(float)
+    e = eval_da.values.flatten().astype(float)
+    mask = ~(np.isnan(r) | np.isnan(e))
+    r_v, e_v = r[mask], e[mask]
+
     fig, ax = plt.subplots(figsize=(6, 6))
-    ax.scatter(r, e, s=6, alpha=0.4)
-    if lim is not None:
-        lo, hi = float(lim[0]), float(lim[1])
-    else:
-        lo = float(min(r.min(), e.min())) if e.size else 0.0
-        hi = float(max(r.max(), e.max())) if e.size else 1.0
-    ax.plot([lo, hi], [lo, hi], "k--", lw=1)
-    ax.set_xlim(lo, hi)
-    ax.set_ylim(lo, hi)
-    ax.set_aspect("equal", adjustable="box")
-    ax.set_xlabel("reference (ref)")
-    ax.set_ylabel("evaluation (eval)")
-    if title:
-        ax.set_title(title)
-    txt = (f"N={stat['N']}\nBias={stat['Bias']:.3f}\n"
-           f"RMSE={stat['RMSE']:.3f}\nR={stat['R']:.3f}")
-    ax.text(0.05, 0.95, txt, transform=ax.transAxes,
-            va="top", ha="left", bbox=dict(boxstyle="round", fc="w"))
-    fig.tight_layout()
-    return fig
+    ax.scatter(r_v, e_v, s=1, alpha=0.3, color="steelblue", rasterized=True)
+    mn = min(r_v.min(), e_v.min())
+    mx = max(r_v.max(), e_v.max())
+    ax.plot([mn, mx], [mn, mx], "r--", lw=1, label="1:1")
+    text = (f"N={stats_dict['N']}\n"
+            f"Bias={stats_dict['Bias']:.4f}\n"
+            f"RMSE={stats_dict['RMSE']:.4f}\n"
+            f"R={stats_dict['R']:.4f}")
+    ax.text(0.05, 0.95, text, transform=ax.transAxes,
+            va="top", fontsize=9, family="monospace",
+            bbox={"facecolor": "white", "alpha": 0.7})
+    ax.set_xlabel("Reference", fontsize=10)
+    ax.set_ylabel("Evaluation", fontsize=10)
+    ax.set_title(title, fontsize=12)
+    ax.legend(fontsize=9)
+    plt.tight_layout()
+    plt.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close()
+
+
+def save_compare_table(
+    stats_hilo: dict, stats_lohi: dict, path: str
+) -> None:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    cols = ["N", "Bias", "RMSE", "MAE", "R", "R2"]
+    rows = []
+    for label, s in [("고→저 (권장)", stats_hilo), ("저→고 (비교)", stats_lohi)]:
+        row = [label]
+        for k in cols:
+            v = s.get(k, np.nan)
+            row.append(f"{int(v)}" if k == "N" else f"{v:.4f}")
+        rows.append(row)
+
+    fig, ax = plt.subplots(figsize=(9, 2))
+    ax.axis("off")
+    header = ["방향"] + cols
+    table = ax.table(
+        cellText=rows, colLabels=header,
+        loc="center", cellLoc="center"
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.auto_set_column_width(col=list(range(len(header))))
+    ax.set_title("검증 통계 비교 (고→저 vs 저→고)", fontsize=12, pad=20)
+    plt.tight_layout()
+    plt.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close()

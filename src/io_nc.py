@@ -1,9 +1,13 @@
+import os
 import xarray as xr
 
 
-def open_nc(path):
-    with open(path, "rb") as f:
-        magic = f.read(4)
-    if not (magic[:3] == b"CDF" or magic == b"\x89HDF"):
-        raise ValueError(f"nc 파일만 지원: {path} (magic={magic!r})")
-    return xr.open_dataset(path, decode_cf=True)
+def open_nc(path: str) -> xr.Dataset:
+    if not path.endswith(".nc"):
+        raise ValueError(f"NetCDF(.nc) 파일만 지원합니다: {path}")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"파일 없음: {path}")
+    try:
+        return xr.open_dataset(path, mask_and_scale=True)
+    except Exception as e:
+        raise ValueError(f"NC 파일 열기 실패: {path}\n{e}") from e

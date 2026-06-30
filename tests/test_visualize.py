@@ -1,23 +1,40 @@
+import os
 import numpy as np
 import xarray as xr
-from src.visualize import make_scatter
+import pytest
+from src.visualize import save_map, save_scatter, save_compare_table
 
 
-def test_make_scatter_returns_figure():
-    a = xr.DataArray(np.array([[1.0, 2.0], [3.0, 4.0]]), dims=("y", "x"))
-    b = xr.DataArray(np.array([[1.1, 2.1], [2.9, 4.2]]), dims=("y", "x"))
-    stat = {"N": 4, "Bias": 0.075, "RMSE": 0.13, "R": 0.99, "R2_nse": 0.98, "MAE": 0.12}
-    fig = make_scatter(a, b, stat)
-    assert fig is not None
-    assert len(fig.axes) >= 1
+def _small_da():
+    lat = np.arange(24.0, 38.0, 0.25)
+    lon = np.arange(117.0, 131.0, 0.25)
+    rng = np.random.default_rng(0)
+    data = rng.uniform(30.0, 35.0, (len(lat), len(lon))).astype(np.float32)
+    return xr.DataArray(data, dims=["lat", "lon"],
+                        coords={"lat": lat, "lon": lon})
 
 
-def test_make_scatter_lim_fixes_axes():
-    a = xr.DataArray(np.array([[30.0, 31.0], [32.0, 33.0]]), dims=("y", "x"))
-    b = xr.DataArray(np.array([[30.5, 31.5], [31.5, 33.5]]), dims=("y", "x"))
-    stat = {"N": 4, "Bias": 0.0, "RMSE": 0.5, "R": 0.9, "R2_nse": 0.5, "MAE": 0.4}
-    lim = (20.0, 40.0)
-    fig = make_scatter(a, b, stat, lim=lim)
-    ax = fig.axes[0]
-    assert ax.get_xlim() == lim
-    assert ax.get_ylim() == lim
+def test_save_map_creates_file(tmp_path):
+    da = _small_da()
+    path = str(tmp_path / "test_map.png")
+    save_map(da, path, "테스트 지도")
+    assert os.path.exists(path)
+    assert os.path.getsize(path) > 0
+
+
+def test_save_scatter_creates_file(tmp_path):
+    da = _small_da()
+    stats = {"N": 100, "Bias": 0.1, "RMSE": 0.5, "MAE": 0.3, "R": 0.9, "R2": 0.81}
+    path = str(tmp_path / "scatter.png")
+    save_scatter(da, da, stats, path, "산점도")
+    assert os.path.exists(path)
+    assert os.path.getsize(path) > 0
+
+
+def test_save_compare_table_creates_file(tmp_path):
+    stats_hilo = {"N": 100, "Bias": 0.1, "RMSE": 0.5, "MAE": 0.3, "R": 0.9, "R2": 0.81}
+    stats_lohi = {"N": 200, "Bias": 0.3, "RMSE": 0.8, "MAE": 0.5, "R": 0.7, "R2": 0.49}
+    path = str(tmp_path / "compare.png")
+    save_compare_table(stats_hilo, stats_lohi, path)
+    assert os.path.exists(path)
+    assert os.path.getsize(path) > 0

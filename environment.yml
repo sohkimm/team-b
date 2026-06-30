@@ -9,12 +9,12 @@ dependencies:
   - numpy
   - scipy
   - pandas
+  - dask
+  - gdal
   - rioxarray
   - rasterio
   - pyproj
+  - pyresample
+  - xesmf
   - matplotlib
-  # cartopy: 지도 배경(해안선)용. import 실패 시 visualize가 plain matplotlib로 폴백.
   - cartopy
-# 제거됨(해커톤 범위 외 + conda solve 폭탄 위험):
-#   pyresample, xesmf(esmpy/ESMF), dask, gdal(rasterio가 끌어옴)
-# 비정규격자(스와스/모델 ESMF)는 범위 외이므로 pyresample/xesmf 불필요.
