@@ -4,6 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## 저장소 구조 (빠른 파악용)
+
+이 저장소는 코드 프로젝트가 아니라 해커톤 제출용 스캐폴딩이다. 빌드·테스트 명령은 없다.
+
+```
+team-b/
+├─ CLAUDE.md / AGENTS.md / .cursorrules   # 내용 동일 — 각 AI 도구가 자동 로드
+├─ README.md / START.md                   # 참가자 안내
+├─ PIPELINE.md                            # 데이터 파이프라인 설명
+├─ environment.yml                        # conda 환경 설정
+└─ submit/                                # 채점 대상 폴더 (전체를 zip 제출)
+   ├─ <팀영문>_<이름>_PROCESS_LOG.md      # 개인별 작업 기록 (과정 70점 근거)
+   ├─ BEFORE_AFTER.md                     # 효과 측정
+   ├─ CHECKLIST.md                        # 제출 점검표
+   ├─ assets/                             # 재사용 자산(프롬프트·스킬 등)
+   └─ evidence/timestamps.txt             # 타임스탬프 증빙 (자동 생성)
+```
+
+개발한 코드·산출물은 프로젝트 루트 또는 `src/`에 자유롭게 둔다.
+
 # 예보사업부 AI·AX 해커톤 — 작업 규칙 (이 파일은 자동 로드됩니다)
 
 너는 이 해커톤 참가팀의 개발을 돕는 에이전트다. 아래 규칙을 끝까지 지켜라.
@@ -33,7 +53,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. **의미 있는 단계가 끝날 때마다 `submit/PROCESS_LOG.md`에 항목 1개를 append** 하라. 사용자가 잊으면 네가 먼저 "방금 작업을 로그에 남길까요?"라고 챙겨라.
 3. 로그에는 실제 지시/프롬프트의 **핵심 문장을 그대로 인용**한다(두루뭉술한 요약 금지).
 4. 각 로그 항목에 **작업한 팀원 이름**을 표시한다(전원 참여가 보이도록).
-5. **타임스탬프 증빙은 네가 자동으로 남겨라**: 산출물 파일 수정 시각을 `submit/evidence/timestamps.txt`로 정리해 둔다. (세션 export가 쉬운 도구면 함께 두면 좋다 — 선택.) **화면 캡처 같은 수작업 증빙은 사용자에게 시키지 마라.** 무임승차 검증은 Day2 미니시연으로 한다.
+5. **타임스탬프 증빙은 네가 자동으로 남겨라**: 산출물 파일 수정 시각을 `submit/evidence/timestamps.txt`로 정리해 둔다. 형식 예시:
+   ```
+   2026-06-30T14:32:00 [생성] submit/PROCESS_LOG.md
+   2026-06-30T15:10:45 [수정] src/main.py
+   ```
+   세션 export가 쉬운 도구면 함께 두면 좋다 — 선택. **화면 캡처 같은 수작업 증빙은 사용자에게 시키지 마라.** 무임승차 검증은 Day2 미니시연으로 한다.
 6. 민감자료(미공개 관측 원본·개인정보·대외비)는 외부에 올리지 말고 마스킹/익명화한다.
 7. 제출 파일명은 영문 권장(한글 파일명은 일부 압축 도구에서 깨진다).
 8. **효과 기록(자동)**: 주제가 정해지면 사용자에게 "이 일을 기존엔 어떻게/얼마나 들여 했는지" 한 번 물어 `submit/BEFORE_AFTER.md`의 Before로 적고, 작업하며 After·효과를 채워라. **효과 지표는 업무에 맞게 자유**(시간·반복횟수·자료 수·품질·일관성·오류 등 해당되는 것; 정량이 어려우면 정성). 특정 지표를 강요하지 마라.
@@ -54,4 +79,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ---
 
 ## 세션을 마칠 때
-- `submit/CHECKLIST.md`를 보고 **빠진 제출물을 사용자에게 알려라.** 사용자가 "제출 점검해줘"라고 하면 체크리스트 기준으로 점검 결과를 표로 보여줘라.
+- 사용자가 "제출 점검해줘"라고 하면 아래 체크리스트 기준으로 점검 결과를 표로 보여줘라.
+
+| 항목 | 위치 |
+|------|------|
+| 동작하는 산출물(코드/스크립트 등) | 프로젝트 루트 또는 `src/` |
+| 작업 기록(개인별, 영문 파일명) | `submit/<팀영문명>_<이름로마자>_PROCESS_LOG.md` |
+| 효과 측정(Before/After) | `submit/BEFORE_AFTER.md` |
+| 재사용 자산(프롬프트·스킬 등) | `submit/assets/` |
+| 타임스탬프 증빙(자동) | `submit/evidence/timestamps.txt` |
+| 발표자료(5분) | 자유 위치 |
+
+- 마감: **Day1 21:30~22:00** / 제출: **이 폴더 전체를 zip 압축** 후 운영자에게 제출.
