@@ -9,8 +9,6 @@ import SalinityMap from './components/SalinityMap.jsx'
 import Legend from './components/Legend.jsx'
 import ValidationMetrics from './components/ValidationMetrics.jsx'
 import ScatterPlot from './components/ScatterPlot.jsx'
-import QualityControl from './components/QualityControl.jsx'
-import ResampleVerdict from './components/ResampleVerdict.jsx'
 
 const A_NAME = 'dataset-sss-ssd-nrt-daily_20260101T1200Z_P20260122T0000Z.nc'
 const B_NAME = 'SMAP_L3_SSS_20260101_8DAYS_V5.0.nc'
@@ -125,10 +123,8 @@ export default function App() {
           <Legend dmin={dmin} dmax={dmax} />
         </div>
         <div className="col-r">
-          <QualityControl qc={run.qc} />
           <ValidationMetrics metrics={metrics} />
           <ScatterPlot scatter={scatter} dir={dir} ready={resultReady} onDir={setDir} />
-          <ResampleVerdict verdict={run.verdict} />
         </div>
       </div>
       {error && (
