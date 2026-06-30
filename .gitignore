@@ -1,5 +1,7 @@
 submit/
 .claude/
+.agents/
+.codex/
 .DS_Store
 .venv/
 results/

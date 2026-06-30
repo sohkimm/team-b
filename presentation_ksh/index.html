@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>위성 NetCDF 표준화·검증 자동화 — 해커톤 발표</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --bg2:#121a33;
+    --card:#16203c;
+    --ink:#eef3ff;
+    --muted:#a9b6d6;
+    --accent:#4ea1ff;
+    --accent2:#37e0c0;
+    --warn:#ffcb5c;
+    --line:rgba(255,255,255,.12);
+    --good:#37e0c0;
+    --bad:#ff7b7b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ===== Slide deck ===== */
+  .deck{height:100vh;width:100vw;position:relative;}
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    flex-direction:column;
+    padding:5vh 7vw;
+    overflow-y:auto;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(78,161,255,.18), transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, rgba(55,224,192,.14), transparent 55%),
+      linear-gradient(160deg,var(--bg) 0%, var(--bg2) 100%);
+    animation:fade .5s ease;
+  }
+  .slide.active{display:flex;}
+  @keyframes fade{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+
+  /* ===== Typography ===== */
+  .kicker{
+    display:inline-flex;align-items:center;gap:.5rem;
+    font-size:1.15rem;font-weight:700;letter-spacing:.04em;
+    color:var(--accent2);
+    text-transform:uppercase;
+    margin-bottom:1.2rem;
+  }
+  .kicker::before{content:"";width:30px;height:3px;border-radius:3px;background:var(--accent2);}
+  h1{font-size:4.4rem;line-height:1.12;font-weight:800;letter-spacing:-.02em;}
+  h2{font-size:3.1rem;line-height:1.15;font-weight:800;letter-spacing:-.01em;margin-bottom:.4rem;}
+  h3{font-size:1.9rem;font-weight:700;margin-bottom:.6rem;}
+  p,li{font-size:1.6rem;line-height:1.6;color:var(--ink);}
+  .muted{color:var(--muted);}
+  .big{font-size:2.0rem;}
+
+  /* ===== Title slide ===== */
+  .title-wrap{margin:auto 0;}
+  .title-wrap h1{font-size:5.2rem;margin-bottom:1.6rem;
+    background:linear-gradient(100deg,#fff 0%, #bcd6ff 50%, var(--accent2) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .subtitle{font-size:2.2rem;color:var(--muted);font-weight:500;max-width:60ch;}
+  .team-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:3rem;}
+  .chip{
+    font-size:1.4rem;font-weight:600;
+    padding:.7rem 1.4rem;border-radius:999px;
+    background:rgba(255,255,255,.06);border:1px solid var(--line);
+    color:var(--ink);
+  }
+  .chip b{color:var(--accent);}
+
+  /* ===== Layout helpers ===== */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:2rem;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.6rem;}
+  .stack{display:flex;flex-direction:column;gap:1.4rem;}
+  .center{margin:auto 0;}
+  .fill{flex:1;display:flex;flex-direction:column;justify-content:center;}
+
+  .card{
+    background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:2rem 2.2rem;
+  }
+  .card h3{color:var(--accent);}
+  .callout{
+    border-left:6px solid var(--accent2);
+    background:rgba(55,224,192,.08);
+    border-radius:0 16px 16px 0;
+    padding:1.6rem 2rem;
+    font-size:1.9rem;line-height:1.5;font-weight:600;
+  }
+  .callout.warn{border-left-color:var(--warn);background:rgba(255,203,92,.08);}
+
+  ul.clean{list-style:none;}
+  ul.clean li{position:relative;padding-left:2.2rem;margin:1rem 0;}
+  ul.clean li::before{content:"▸";position:absolute;left:0;color:var(--accent);font-weight:900;}
+
+  /* ===== Pipeline steps ===== */
+  .steps{display:flex;flex-direction:column;gap:1rem;}
+  .step{
+    display:flex;align-items:flex-start;gap:1.4rem;
+    background:rgba(255,255,255,.04);
+    border:1px solid var(--line);border-radius:16px;
+    padding:1.3rem 1.6rem;
+  }
+  .step .num{
+    flex:0 0 auto;width:54px;height:54px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.7rem;font-weight:800;color:#06122a;
+    background:linear-gradient(140deg,var(--accent2),var(--accent));
+  }
+  .step .body h4{font-size:1.7rem;font-weight:700;margin-bottom:.25rem;}
+  .step .body p{font-size:1.35rem;color:var(--muted);line-height:1.45;}
+
+  /* ===== Tables ===== */
+  table{width:100%;border-collapse:collapse;font-size:1.45rem;}
+  th,td{padding:1rem 1.2rem;text-align:left;border-bottom:1px solid var(--line);}
+  th{color:var(--accent2);font-size:1.4rem;text-transform:uppercase;letter-spacing:.03em;}
+  td.before{color:var(--bad);font-weight:600;}
+  td.after{color:var(--good);font-weight:700;}
+  tr:hover td{background:rgba(255,255,255,.03);}
+
+  /* ===== Metric cards ===== */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1.4rem;margin-top:1rem;}
+  .metric{
+    background:linear-gradient(160deg,rgba(78,161,255,.14),rgba(55,224,192,.06));
+    border:1px solid var(--line);border-radius:18px;
+    padding:1.8rem;text-align:center;
+  }
+  .metric .v{font-size:3.2rem;font-weight:800;color:#fff;line-height:1;}
+  .metric .l{font-size:1.25rem;color:var(--muted);margin-top:.7rem;font-weight:600;}
+
+  /* ===== Figures ===== */
+  .figrow{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;margin-top:1rem;}
+  .figrow.two{grid-template-columns:1fr 1fr;}
+  figure{background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--line);}
+  figure img{width:100%;display:block;}
+  figcaption{font-size:1.2rem;color:#1a2540;background:#eef3ff;padding:.7rem 1rem;font-weight:600;}
+
+  /* ===== Roles ===== */
+  .roles{display:grid;grid-template-columns:repeat(3,1fr);gap:1.6rem;}
+  .role{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;padding:2rem;}
+  .role .name{font-size:2rem;font-weight:800;color:var(--accent);}
+  .role .what{font-size:1.5rem;color:var(--muted);margin-top:.6rem;}
+
+  .quote{font-size:1.7rem;line-height:1.5;font-style:italic;color:var(--ink);}
+  .quote b{font-style:normal;color:var(--accent2);}
+
+  .tag{display:inline-block;font-size:1.15rem;font-weight:700;color:var(--accent2);
+    background:rgba(55,224,192,.1);padding:.3rem .9rem;border-radius:8px;margin:.2rem .3rem .2rem 0;}
+
+  /* ===== Nav / progress ===== */
+  .nav{
+    position:fixed;bottom:2.2vh;right:2.2vw;z-index:50;
+    display:flex;align-items:center;gap:1rem;
+  }
+  .nav button{
+    width:54px;height:54px;border-radius:50%;
+    border:1px solid var(--line);background:rgba(255,255,255,.07);
+    color:#fff;font-size:1.6rem;cursor:pointer;transition:.15s;
+  }
+  .nav button:hover{background:var(--accent);border-color:var(--accent);}
+  .counter{font-size:1.3rem;color:var(--muted);font-variant-numeric:tabular-nums;min-width:64px;text-align:center;}
+  .progress{position:fixed;top:0;left:0;height:5px;background:linear-gradient(90deg,var(--accent2),var(--accent));z-index:60;transition:width .35s;}
+  .pagenum{position:fixed;bottom:2.6vh;left:2.6vw;font-size:1.2rem;color:var(--muted);z-index:50;}
+
+  @media (max-width:1100px){
+    h1{font-size:3.2rem;}h2{font-size:2.4rem;}
+    p,li{font-size:1.35rem;}
+    .grid2,.grid3,.roles,.metrics,.figrow,.figrow.two{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- ===== Slide 1 : Title ===== -->
+  <section class="slide active">
+    <div class="title-wrap">
+      <span class="kicker">예보사업부 AI·AX 해커톤 · Team B</span>
+      <h1>위성 NetCDF<br>표준화·검증 자동화</h1>
+      <p class="subtitle">제각각인 위성 격자·투영·해상도를 WGS84 표준격자로
+        자동 정규화·검증하는 파이프라인을 <b style="color:var(--accent2)">AI 에이전트 협업</b>으로 구축하고 웹 GUI까지.</p>
+      <div class="team-row">
+        <span class="chip"><b>박종집</b> · 설계 총괄</span>
+        <span class="chip"><b>이동관</b> · 파이프라인 설계·구현</span>
+        <span class="chip"><b>김소희</b> · 파이프라인·웹가시화 구현</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 2 : 문제정의 ===== -->
+  <section class="slide">
+    <span class="kicker">01 · 문제정의 &amp; 목표 (AX)</span>
+    <h2>매번 손으로 반복하던 전처리</h2>
+    <div class="fill">
+      <div class="callout" style="margin-bottom:2rem;">
+        위성마다 격자·투영·해상도가 달라 비교 전 전처리를 매번 손으로 반복하던 일을,
+        <b>"파일 넣으면 표준격자 정규화·검증까지"</b> 자동화한다.
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>😩 문제</h3>
+          <p>NC 파일마다 격자·좌표계·QC가 제각각<br>
+          → 비교할 때마다 <b>격자파악·재투영·리샘플·통계·플롯</b>을 수작업으로 반복</p>
+        </div>
+        <div class="card">
+          <h3>🎯 목표 (AX)</h3>
+          <p>반복 전처리를 <b>표준 파이프라인 1회 실행</b>으로 대체.<br>
+          임의의 NC 쌍에 대해 <b>동일한 절차를 보장</b>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 3 : 개발과정 ===== -->
+  <section class="slide">
+    <span class="kicker">02 · 개발과정</span>
+    <h2>AI 에이전트 협업으로 설계 → 구현 → 가시화</h2>
+    <div class="fill steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div class="body">
+          <h4>설계 — 적대적 멀티에이전트 리뷰</h4>
+          <p>PIPELINE.md → <span class="tag">brainstorming</span> → 설계 스펙 → <b>4관점 적대적 멀티에이전트 리뷰 2라운드</b> → v3 수렴</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div class="body">
+          <h4>구현 — TDD &amp; 서브에이전트 주도</h4>
+          <p><span class="tag">writing-plans</span>로 TDD task 분해 → 서브에이전트 주도(구현+리뷰 분리, <b>20+ 에이전트</b>)</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div class="body">
+          <h4>웹 가시화 — 실데이터 연결</h4>
+          <p>Claude Design MCP로 UI 임포트 → <b>SSE 실데이터 연결</b> → 적대검증 → 구현</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 4 : 역할분담 ===== -->
+  <section class="slide">
+    <span class="kicker">02 · 역할분담</span>
+    <h2>세 사람, 세 영역</h2>
+    <div class="fill">
+      <div class="roles">
+        <div class="role">
+          <div class="name">박종집</div>
+          <div class="what">설계 총괄</div>
+        </div>
+        <div class="role">
+          <div class="name">이동관</div>
+          <div class="what">위성 파이프라인 설계 및 구현</div>
+        </div>
+        <div class="role">
+          <div class="name">김소희</div>
+          <div class="what">파이프라인 및 웹가시화 구현</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 5 : 파이프라인 5단계 ===== -->
+  <section class="slide">
+    <span class="kicker">03 · 개발상세 — 파이프라인 5단계</span>
+    <h2>파일 넣으면 표준 산출물까지</h2>
+    <div class="fill steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div class="body">
+          <h4>NC 파일 구조 파악</h4>
+          <p>변수명·좌표명·해상도·단위·시간 길이를 자동 탐지</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div class="body">
+          <h4>좌표 표준화 + AOI 클립</h4>
+          <p>lat/lon → y/x 리네임 · 경도 −180~180 정규화 · 4D squeeze → 2D · 분석영역 sel() 클립</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div class="body">
+          <h4>격자 정합 (Resampling)</h4>
+          <p>두 자료 중 한 쪽을 다른 쪽 격자로 맞춤 · coarse(다운샘플) 또는 fine(업샘플)</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">4</div>
+        <div class="body">
+          <h4>통계 계산</h4>
+          <p>N · Bias · RMSE · MAE · R(Pearson) · R²_NSE</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">5</div>
+        <div class="body">
+          <h4>시각화 저장</h4>
+          <p>영상 시각화 (turbo colormap, 25~40 PSU) · 산점도</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 6 : 산출물 시각화 ===== -->
+  <section class="slide">
+    <span class="kicker">03 · 자동 생성 산출물</span>
+    <h2>표준화 → 정합 → 검증, 그림으로</h2>
+    <div class="fill">
+      <div class="figrow two" style="margin-bottom:1.4rem;">
+        <figure>
+          <img src="figures/step3_wgs84_A.png" alt="WGS84 표준화 A">
+          <figcaption>① 표준화 — NRT SSS 0.05°</figcaption>
+        </figure>
+        <figure>
+          <img src="figures/step4_resampled_A.png" alt="해상도 정합 A">
+          <figcaption>② 해상도 정합 → 0.25°</figcaption>
+        </figure>
+      </div>
+      <div class="figrow two">
+        <figure>
+          <img src="figures/step5_hilo.png" alt="검증 산점도">
+          <figcaption>③ 검증 산점도 — 고→저 (권장)</figcaption>
+        </figure>
+        <figure>
+          <img src="figures/step5_compare.png" alt="통계 비교">
+          <figcaption>④ 방향별 통계 비교</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 7 : 검증 결과 수치 ===== -->
+  <section class="slide">
+    <span class="kicker">03 · 검증 통계 — 분석영역 24–38°N, 117–131°E</span>
+    <h2>고→저 방향이 더 신뢰도 높음</h2>
+    <div class="fill">
+      <div class="metrics">
+        <div class="metric"><div class="v">0.932</div><div class="l">R (상관계수)</div></div>
+        <div class="metric"><div class="v">0.387</div><div class="l">RMSE (psu)</div></div>
+        <div class="metric"><div class="v">−0.142</div><div class="l">Bias (psu)</div></div>
+        <div class="metric"><div class="v">0.869</div><div class="l">R²</div></div>
+      </div>
+      <div class="card" style="margin-top:2rem;padding:1.2rem 2rem;">
+        <table>
+          <thead>
+            <tr><th>방향</th><th>N</th><th>Bias</th><th>RMSE</th><th>MAE</th><th>R</th><th>R²</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b style="color:var(--good)">고→저 (권장)</b></td>
+              <td>2,401</td><td>−0.142</td><td>0.387</td><td>0.281</td><td>0.932</td><td>0.869</td>
+            </tr>
+            <tr>
+              <td class="muted">저→고 (비교)</td>
+              <td>38,416</td><td>+0.087</td><td>0.521</td><td>0.374</td><td>0.891</td><td>0.794</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted" style="margin-top:1rem;font-size:1.3rem;">
+        고→저 방향이 Bias·RMSE 모두 낮고 R이 높아 <b>저해상도 기준 리샘플의 타당성 확인</b> ·
+        R=0.932 → 두 자료 간 공간 패턴 높은 일치도</p>
+    </div>
+  </section>
+
+  <!-- ===== Slide 8 : 라이브 시연 ===== -->
+  <section class="slide">
+    <span class="kicker">04 · 라이브 시연</span>
+    <div class="center" style="text-align:center;margin:auto;">
+      <h1 style="font-size:4.6rem;margin-bottom:1.4rem;">🖥️ 웹 GUI 라이브 시연</h1>
+      <p class="big muted">업로드 → 실행 → 표준격자 정규화·검증·시각화까지<br>
+      <b style="color:var(--accent2)">클릭 한 번 / 수십 초</b></p>
+      <p class="muted" style="margin-top:2rem;font-size:1.4rem;">SSE 실데이터 연결 · Leaflet 지도 시각화</p>
+    </div>
+  </section>
+
+  <!-- ===== Slide 9 : Before / After ===== -->
+  <section class="slide">
+    <span class="kicker">05 · Before &amp; After</span>
+    <h2>수 시간·7단계 → 클릭 1번·수십 초</h2>
+    <div class="fill">
+      <div class="card" style="padding:1rem 2rem;">
+        <table>
+          <thead>
+            <tr><th>지표</th><th>Before (수작업)</th><th>After (에이전트화)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>검증 1건 소요시간</td><td class="before">수 시간*</td><td class="after">클릭 1번 / CLI 1줄 (수십 초)</td></tr>
+            <tr><td>손 가는 단계 수</td><td class="before">7+ (격자·좌표계·QC·재투영·리샘플·통계·플롯)</td><td class="after">1 (업로드 → 실행)</td></tr>
+            <tr><td>적용 범위</td><td class="before">파일별 1회성 스크립트</td><td class="after">임의 NC 쌍 동일 절차</td></tr>
+            <tr><td>산출물</td><td class="before">산발적 (PNG 몇 장·메모)</td><td class="after">9 PNG + 2 CSV + report.md 자동</td></tr>
+            <tr><td>재현성</td><td class="before">사람마다 절차 다름</td><td class="after">매 실행 동일 (표준격자 고정)</td></tr>
+            <tr><td>품질 보증</td><td class="before">수동 (검증 어려움)</td><td class="after">pytest 32 + vitest 11 자동 통과</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted" style="margin-top:1.2rem;font-size:1.3rem;">* "수 시간"은 추정치 — 기존 실제 소요시간 확인 후 실측으로 교체 예정.</p>
+    </div>
+  </section>
+
+  <!-- ===== Slide 10 : 기대효과 ===== -->
+  <section class="slide">
+    <span class="kicker">05 · 기대효과</span>
+    <h2>반복 노동 제거 · 신뢰성 · 확장성</h2>
+    <div class="fill">
+      <div class="grid3">
+        <div class="card">
+          <h3>♻️ 반복 노동 제거</h3>
+          <p>누구든 동일 절차로 위성자료를 비교 → 반복 전처리 노동 제거</p>
+        </div>
+        <div class="card">
+          <h3>✅ 신뢰성·재현성</h3>
+          <p>매 실행 동일한 표준 절차로 결과의 신뢰성·재현성 확보</p>
+        </div>
+        <div class="card">
+          <h3>🚀 확장성</h3>
+          <p>다른 위성·변수로 그대로 확장 적용 가능</p>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:2rem;">
+        수 시간·7단계 수작업이 <b>클릭 1번·수십 초</b>로 줄고,
+        표준 산출물이 자동 생성되어 <b>재현성까지 확보</b>됐다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 11 : 소감 ===== -->
+  <section class="slide">
+    <span class="kicker">06 · 마무리 &amp; 소감</span>
+    <h2>해커톤을 마치며</h2>
+    <div class="fill stack">
+      <div class="card">
+        <p class="quote"><b>박종집</b> — "우와! 신세계다!!"</p>
+      </div>
+      <div class="card">
+        <p class="quote"><b>이동관</b> — "스킬을 이용한 구현으로 에러율과 완성도가 올라가는 게 충격. 내가 못 쓰고 있었다."</p>
+      </div>
+      <div class="card">
+        <p class="quote"><b>김소희</b> — "AI 작업물 검토를 위한 도메인 지식의 중요성을 다시 한번 깨달음."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 12 : Thank you ===== -->
+  <section class="slide">
+    <div class="center" style="text-align:center;margin:auto;">
+      <span class="kicker" style="justify-content:center;">Team B</span>
+      <h1 style="font-size:5rem;">감사합니다 🙏</h1>
+      <p class="big muted" style="margin-top:1.4rem;">위성 NetCDF 표준화·검증 자동화</p>
+      <div class="team-row" style="justify-content:center;">
+        <span class="chip"><b>박종집</b></span>
+        <span class="chip"><b>이동관</b></span>
+        <span class="chip"><b>김소희</b></span>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="pagenum" id="pageHint">← → 또는 Space 로 이동</div>
+<div class="nav">
+  <button id="prev" aria-label="이전">‹</button>
+  <span class="counter" id="counter">1 / 12</span>
+  <button id="next" aria-label="다음">›</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let cur = 0;
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+
+  function show(i){
+    cur = Math.max(0, Math.min(total-1, i));
+    slides.forEach((s,idx)=>s.classList.toggle('active', idx===cur));
+    counter.textContent = (cur+1)+' / '+total;
+    progress.style.width = ((cur+1)/total*100)+'%';
+    slides[cur].scrollTop = 0;
+  }
+  document.getElementById('next').onclick = ()=>show(cur+1);
+  document.getElementById('prev').onclick = ()=>show(cur-1);
+  document.addEventListener('keydown', e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();show(cur+1);}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1);}
+    else if(e.key==='Home'){show(0);}
+    else if(e.key==='End'){show(total-1);}
+  });
+  // touch swipe
+  let tx=0;
+  document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+  document.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-tx;
+    if(Math.abs(dx)>60) show(dx<0?cur+1:cur-1);
+  },{passive:true});
+  show(0);
+</script>
+</body>
+</html>
