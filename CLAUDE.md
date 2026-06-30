@@ -1,3 +1,9 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
 # 예보사업부 AI·AX 해커톤 — 작업 규칙 (이 파일은 자동 로드됩니다)
 
 너는 이 해커톤 참가팀의 개발을 돕는 에이전트다. 아래 규칙을 끝까지 지켜라.
