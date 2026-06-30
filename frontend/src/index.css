@@ -1,0 +1,4 @@
+/* 골격용 리셋 — Claude 디자인으로 교체 예정 */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #0c0d11; color: #111; }
+#root { width: 100%; }

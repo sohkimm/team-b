@@ -18,3 +18,8 @@ dependencies:
   - xesmf
   - matplotlib
   - cartopy
+  # 웹 GUI 백엔드 (FastAPI). 업로드→lee 파이프라인→JSON(SSE) 반환.
+  - fastapi
+  - uvicorn
+  - python-multipart
+  - httpx          # fastapi.testclient(TestClient) 의존성 — SSE 엔드포인트 테스트용

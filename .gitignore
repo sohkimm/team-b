@@ -1,3 +1,10 @@
 submit/
 .claude/
 .DS_Store
+.venv/
+results/
+# 의존성/빌드 산출물
+node_modules/
+dist/
+__pycache__/
+.pytest_cache/

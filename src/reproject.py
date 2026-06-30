@@ -66,10 +66,12 @@ def to_wgs84_region(da: xr.DataArray, info: dict) -> xr.DataArray:
     target_lon = np.arange(LON_MIN, LON_MAX + res * 0.5, res)
 
     # 목표 격자가 원본 범위 안에 있는지 클립
-    target_lat = target_lat[(target_lat >= da.lat.min()) &
-                             (target_lat <= da.lat.max())]
-    target_lon = target_lon[(target_lon >= da.lon.min()) &
-                             (target_lon <= da.lon.max())]
+    # (numpy 2.0 / xarray 2024.7 호환: numpy배열 ≥ xr스칼라가 ValueError →
+    #  float()로 스칼라화. 알고리즘 변경 아님. ※ lee 검토 요망)
+    target_lat = target_lat[(target_lat >= float(da.lat.min())) &
+                             (target_lat <= float(da.lat.max()))]
+    target_lon = target_lon[(target_lon >= float(da.lon.min())) &
+                             (target_lon <= float(da.lon.max()))]
 
     result = da.interp(lat=target_lat, lon=target_lon, method="linear")
     return result
