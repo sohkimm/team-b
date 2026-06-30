@@ -9,7 +9,6 @@ import SalinityMap from './components/SalinityMap.jsx'
 import Legend from './components/Legend.jsx'
 import ValidationMetrics from './components/ValidationMetrics.jsx'
 import ScatterPlot from './components/ScatterPlot.jsx'
-import PipelineSteps from './components/PipelineSteps.jsx'
 import QualityControl from './components/QualityControl.jsx'
 import ResampleVerdict from './components/ResampleVerdict.jsx'
 
@@ -115,8 +114,7 @@ export default function App() {
             runReady={!!aFile && !!bFile && !running} running={running}
             onDropA={(e) => handleDrop(e, 'a')}
             onDropB={(e) => handleDrop(e, 'b')}
-            onRun={() => start(false)} onDemo={() => start(true)} onReset={reset} />
-          <PipelineSteps completed={run.completed} active={run.active} />
+            onRun={() => start(false)} onReset={reset} />
           <Inspection inspect={inspect} />
         </div>
         <div className="col-c">

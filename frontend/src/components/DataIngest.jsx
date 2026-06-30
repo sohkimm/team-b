@@ -10,7 +10,7 @@ function Slot({ loaded, tag, accent, name, color }) {
   }
 }
 
-export default function DataIngest({ a, b, aName, bName, runReady, running, onDropA, onDropB, onRun, onDemo, onReset }) {
+export default function DataIngest({ a, b, aName, bName, runReady, running, onDropA, onDropB, onRun, onReset }) {
   const sa = Slot({ loaded: a, tag: 'DATASET A · EVAL', accent: '#8e96ff', name: aName, color: '#6d77ff' })
   const sb = Slot({ loaded: b, tag: 'DATASET B · REF', accent: '#42c98a', name: bName, color: '#42c98a' })
   const drag = (e) => e.preventDefault()
@@ -26,11 +26,6 @@ export default function DataIngest({ a, b, aName, bName, runReady, running, onDr
         </div>
       </div>
       <div className="ingest-btns">
-        <div className="btn-demo" onClick={running ? undefined : onDemo}
-          style={{
-            cursor: running ? 'not-allowed' : 'pointer',
-            opacity: running ? 0.55 : 1,
-          }}>{running ? 'Streaming...' : 'Run demo'}</div>
         <div className="btn-run" onClick={runReady ? onRun : undefined}
           style={{
             background: runReady ? 'linear-gradient(135deg,#6d77ff,#9a6dff)' : '#23252e',

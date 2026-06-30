@@ -40,8 +40,6 @@
 .drop-name { font-family:'IBM Plex Mono',monospace; font-size:11px; color:#c3c5cd; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ingest-btns { display:flex; gap:9px; margin-top:15px; }
 .btn { padding:12px 16px; border:1px solid #2d303b; border-radius:8px; font-size:13px; color:#aeb0bb; cursor:pointer; }
-.btn-demo { flex:1; padding:12px; border-radius:8px; text-align:center; font-size:15px; font-weight:600;
-  background:linear-gradient(135deg,#1f8f70,#42c98a); color:#06110d; box-shadow:0 4px 14px rgba(66,201,138,.24); }
 .btn-run { flex:1; padding:12px; border-radius:8px; text-align:center; font-size:15px; font-weight:600; }
 
 /* inspection / qc */
@@ -62,13 +60,13 @@
 .seg-sm { padding:5px 11px; border-radius:5px; font-family:'IBM Plex Mono',monospace; font-size:9px; }
 
 /* pipeline */
-.steps { display:flex; gap:10px; }
-.step { flex:1; border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:3px; transition:all .3s; }
+.steps { display:flex; gap:10px; min-width:0; }
+.step { flex:1 1 0; min-width:0; border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:3px; transition:all .3s; }
 .step-hd { display:flex; align-items:center; gap:7px; }
 .step-chip { width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; }
 .step-dot { margin-left:auto; width:7px; height:7px; border-radius:50%; }
-.step-title { font-size:12.5px; font-weight:600; margin-top:2px; }
-.step-sub { font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#565a68; }
+.step-title { font-size:12.5px; font-weight:600; margin-top:2px; overflow-wrap:break-word; }
+.step-sub { font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#565a68; overflow-wrap:break-word; }
 .progress { width:170px; height:6px; background:#23252e; border-radius:4px; overflow:hidden; }
 .progress > div { height:100%; background:linear-gradient(90deg,#6d77ff,#9a6dff); transition:width .4s; border-radius:4px; }
 
