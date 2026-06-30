@@ -1,5 +1,18 @@
 import numpy as np
+import pytest
 import xarray as xr
+
+
+@pytest.fixture
+def make_sss_ds():
+    lat = np.arange(24.0, 38.0, 0.25)
+    lon = np.arange(117.0, 131.0, 0.25)
+    data = np.ones((1, lat.size, lon.size))
+    return xr.Dataset(
+        {"sea_surface_salinity": (("time", "latitude", "longitude"), data,
+                                  {"standard_name": "sea_surface_salinity", "units": "1e-3"})},
+        coords={"time": [np.datetime64("2026-01-01")], "latitude": lat, "longitude": lon},
+    )
 
 
 def make_grid_da(values, lat, lon, name="sea_surface_salinity", attrs=None):
