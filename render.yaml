@@ -1,0 +1,17 @@
+# Render 배포 설정 (무료 티어). FastAPI 백엔드만 호스팅 — 프론트는 Vercel.
+# src/ 모듈을 프로젝트 루트 기준으로 import 하므로 rootDir 은 레포 루트(.) 유지.
+services:
+  - type: web
+    name: ncval-backend
+    runtime: python
+    plan: free
+    rootDir: .
+    buildCommand: pip install -r requirements.txt
+    # backend.main:app — 루트에서 실행돼야 src.web_stream import 됨. $PORT 는 Render가 주입.
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"   # rasterio·netCDF4·scipy 휠이 안정적으로 제공되는 버전
+      - key: FRONTEND_ORIGIN
+        sync: false        # ← Vercel 배포 후 대시보드에서 실제 도메인 입력 (콤마로 여러 개 가능)

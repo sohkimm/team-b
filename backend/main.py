@@ -21,9 +21,15 @@ DEMO_B = os.path.join(ROOT, "SMAP_L3_SSS_20260101_8DAYS_V5.0.nc")
 
 app = FastAPI(title="NC Validation Pipeline API")
 
+# 로컬 dev origin + 배포 프론트 origin(환경변수).
+# FRONTEND_ORIGIN 은 콤마로 여러 개 지정 가능 (예: Vercel 프리뷰 + 프로덕션).
+_default_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+_env_origins = [o.strip() for o in os.environ.get("FRONTEND_ORIGIN", "").split(",") if o.strip()]
+allow_origins = _default_origins + _env_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=allow_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -71,4 +77,6 @@ async def api_analyze(
                 except OSError:
                     pass
 
-    return StreamingResponse(gen(), media_type="text/event-stream")
+    # SSE: 프록시 버퍼링 비활성화(X-Accel-Buffering) + 캐시 금지 → 이벤트 즉시 전달.
+    headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    return StreamingResponse(gen(), media_type="text/event-stream", headers=headers)

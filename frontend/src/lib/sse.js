@@ -10,8 +10,11 @@ export function parseSSE(frame) {
   return { event, data: JSON.parse(data) }
 }
 
+// 백엔드 베이스 URL. 로컬 기본값 localhost:8000, 배포 시 VITE_API_URL 로 Render 주소 주입.
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+
 export async function runAnalyzeStream(formData, { onEvent, signal } = {}) {
-  const res = await fetch('/api/analyze', { method: 'POST', body: formData, signal })
+  const res = await fetch(`${API_BASE}/api/analyze`, { method: 'POST', body: formData, signal })
   if (!res.ok || !res.body) throw new Error(`stream failed (${res.status})`)
   const reader = res.body.getReader()
   const decoder = new TextDecoder()

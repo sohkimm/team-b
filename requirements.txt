@@ -1,0 +1,18 @@
+# Render(pip) 배포용 — web 분석 경로(src/web_stream.py 체인)가 실제로 import/실행하는 패키지만.
+# environment.yml(conda) 기반에서 다음은 코드가 안 써서 제외:
+#   gdal(standalone) · xesmf · cartopy · pyresample · dask · matplotlib · httpx(테스트 전용)
+# rasterio/rioxarray는 step4 해상도 정합(reproject_match)에 실제 쓰여 필수.
+# (rasterio pip 휠은 GDAL을 번들 → 시스템 gdal 불필요. pyproj는 rioxarray가 자동 설치.)
+
+# --- 웹 서버 ---
+fastapi
+uvicorn[standard]
+python-multipart
+
+# --- 데이터 파이프라인 (실제 import 기준) ---
+xarray
+netCDF4         # xarray가 .nc 여는 엔진 (직접 import는 없지만 런타임 필수)
+numpy
+scipy           # src/metrics.py: scipy.stats
+rasterio        # src/resample.py: rasterio.enums.Resampling (top-level + reproject_match)
+rioxarray       # src/resample.py·reproject.py: .rio 액세서
