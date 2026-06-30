@@ -9,6 +9,9 @@ import SalinityMap from './components/SalinityMap.jsx'
 import Legend from './components/Legend.jsx'
 import ValidationMetrics from './components/ValidationMetrics.jsx'
 import ScatterPlot from './components/ScatterPlot.jsx'
+import PipelineSteps from './components/PipelineSteps.jsx'
+import QualityControl from './components/QualityControl.jsx'
+import ResampleVerdict from './components/ResampleVerdict.jsx'
 
 const A_NAME = 'dataset-sss-ssd-nrt-daily_20260101T1200Z_P20260122T0000Z.nc'
 const B_NAME = 'SMAP_L3_SSS_20260101_8DAYS_V5.0.nc'
@@ -112,7 +115,8 @@ export default function App() {
             runReady={!!aFile && !!bFile && !running} running={running}
             onDropA={(e) => handleDrop(e, 'a')}
             onDropB={(e) => handleDrop(e, 'b')}
-            onRun={() => start(false)} onReset={reset} />
+            onRun={() => start(false)} onDemo={() => start(true)} onReset={reset} />
+          <PipelineSteps completed={run.completed} active={run.active} />
           <Inspection inspect={inspect} />
         </div>
         <div className="col-c">
@@ -123,8 +127,10 @@ export default function App() {
           <Legend dmin={dmin} dmax={dmax} />
         </div>
         <div className="col-r">
+          <QualityControl qc={run.qc} />
           <ValidationMetrics metrics={metrics} />
           <ScatterPlot scatter={scatter} dir={dir} ready={resultReady} onDir={setDir} />
+          <ResampleVerdict verdict={run.verdict} />
         </div>
       </div>
       {error && (
