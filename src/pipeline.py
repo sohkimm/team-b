@@ -6,7 +6,7 @@ from src.inspect_nc import describe
 from src.reproject import to_wgs84
 from src.resample import to_grid, _dx
 from src.metrics import stats
-from src.visualize import make_scatter
+from src.visualize import make_scatter, plot_map
 
 
 @dataclass
@@ -40,6 +40,15 @@ def run(path_a, path_b, cfg):
     da_a, rep_a = _prep(path_a, cfg.var_a, cfg.time_index)
     da_b, rep_b = _prep(path_b, cfg.var_b, cfg.time_index)
 
+    # Step 1 이미지: AOI 클립 후 원본 해상도
+    fig_dir = os.path.join(cfg.outdir, "figures")
+    a_crop = _crop_aoi(da_a, cfg.aoi)
+    b_crop = _crop_aoi(da_b, cfg.aoi)
+    plot_map(a_crop, title=f"[Step1] {rep_a.var_name} ({rep_a.dlon}°)",
+             save_path=os.path.join(fig_dir, f"step1_{rep_a.var_name}.png"))
+    plot_map(b_crop, title=f"[Step1] {rep_b.var_name} ({rep_b.dlon}°)",
+             save_path=os.path.join(fig_dir, f"step1_{rep_b.var_name}.png"))
+
     # ref/eval 역할 (Bias = eval − ref). auto: 저해상도(큰 dlon)=ref.
     if cfg.ref == "a":
         ref_is_a = True
@@ -72,6 +81,13 @@ def run(path_a, path_b, cfg):
     s = stats(eval_on, ref_on)
     grid_res = round(_dx(target, "x"), 6)
     title = f"grid={cfg.grid} ({grid_res} deg), resamp={resamp}"
+
+    # Step 2 이미지: 격자 정합 후
+    plot_map(ref_on,  title=f"[Step2-ref]  {ref_name}  → {grid_res}°",
+             save_path=os.path.join(fig_dir, f"step2_ref_{cfg.grid}.png"))
+    plot_map(eval_on, title=f"[Step2-eval] {eval_name} → {grid_res}°",
+             save_path=os.path.join(fig_dir, f"step2_eval_{cfg.grid}.png"))
+
     fig = make_scatter(eval_on, ref_on, s, title=title)
     return {"stats": s, "figure": fig, "ref_name": ref_name,
             "eval_name": eval_name, "grid": cfg.grid, "grid_res": grid_res,

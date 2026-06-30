@@ -3,6 +3,51 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+try:
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+    _HAS_CARTOPY = True
+except ImportError:
+    _HAS_CARTOPY = False
+
+
+def plot_map(da, title="", save_path=None, vmin=25, vmax=40):
+    """지도 이미지 반환 (cartopy 해안선 + 육지 마스킹). save_path 있으면 저장도."""
+    import os
+    data = da.squeeze()
+    y = data["y"].values
+    x = data["x"].values
+
+    if _HAS_CARTOPY:
+        fig, ax = plt.subplots(figsize=(8, 6),
+                               subplot_kw={"projection": ccrs.PlateCarree()})
+        ax.set_extent([x.min(), x.max(), y.min(), y.max()], crs=ccrs.PlateCarree())
+        im = ax.pcolormesh(x, y, data.values, transform=ccrs.PlateCarree(),
+                           cmap="turbo", shading="auto", vmin=vmin, vmax=vmax)
+        ax.add_feature(cfeature.LAND, facecolor="lightgray", zorder=3)
+        ax.add_feature(cfeature.COASTLINE, linewidth=0.8, zorder=4)
+        ax.add_feature(cfeature.BORDERS, linewidth=0.4, linestyle=":", zorder=4)
+        gl = ax.gridlines(draw_labels=True, linewidth=0.4, color="gray", alpha=0.5)
+        gl.top_labels = False
+        gl.right_labels = False
+    else:
+        fig, ax = plt.subplots(figsize=(8, 6))
+        im = ax.pcolormesh(x, y, data.values, cmap="turbo", shading="auto",
+                           vmin=vmin, vmax=vmax)
+        ax.set_xlabel("Longitude")
+        ax.set_ylabel("Latitude")
+
+    plt.colorbar(im, ax=ax, label="PSU")
+    if title:
+        ax.set_title(title, fontsize=11)
+    fig.tight_layout()
+
+    if save_path:
+        os.makedirs(os.path.dirname(save_path) or ".", exist_ok=True)
+        fig.savefig(save_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+    return fig
+
 
 def make_scatter(eval_da, ref_da, stat, title="", lim=None):
     """1:1 산점도. lim=(lo,hi)를 주면 x·y 축을 동일 범위로 고정(두 그림 비교용)."""
