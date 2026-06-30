@@ -74,4 +74,5 @@ def run(path_a, path_b, cfg):
     title = f"grid={cfg.grid} ({grid_res} deg), resamp={resamp}"
     fig = make_scatter(eval_on, ref_on, s, title=title)
     return {"stats": s, "figure": fig, "ref_name": ref_name,
-            "eval_name": eval_name, "grid": cfg.grid, "grid_res": grid_res}
+            "eval_name": eval_name, "grid": cfg.grid, "grid_res": grid_res,
+            "eval_on": eval_on, "ref_on": ref_on, "title": title}
