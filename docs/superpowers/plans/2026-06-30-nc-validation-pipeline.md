@@ -454,7 +454,7 @@ import numpy as np
 import pytest
 from src.reproject import to_wgs84
 from src.inspect_nc import InspectReport
-from conftest import make_grid_da
+from tests.conftest import make_grid_da
 
 
 def _report(grid_kind="GEOGRAPHIC"):
@@ -814,6 +814,8 @@ def _prep(path, var_override, time_index):
     da = ds[rep.var_name]
     if "time" in da.dims:
         da = da.isel(time=time_index)
+    # CMEMS sos는 (time, depth, lat, lon) — depth 등 잔여 싱글톤 차원 제거 → 2D(lat,lon)
+    da = da.squeeze(drop=True)
     return to_wgs84(da, rep), rep
 
 
