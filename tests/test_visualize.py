@@ -28,6 +28,7 @@ def test_save_scatter_creates_file(tmp_path):
     path = str(tmp_path / "scatter.png")
     save_scatter(da, da, stats, path, "산점도")
     assert os.path.exists(path)
+    assert os.path.getsize(path) > 0
 
 
 def test_save_compare_table_creates_file(tmp_path):
@@ -36,3 +37,4 @@ def test_save_compare_table_creates_file(tmp_path):
     path = str(tmp_path / "compare.png")
     save_compare_table(stats_hilo, stats_lohi, path)
     assert os.path.exists(path)
+    assert os.path.getsize(path) > 0
