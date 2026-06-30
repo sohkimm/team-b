@@ -1,0 +1,44 @@
+## 산출물 타임스탬프 증빙 (자동 생성)
+## 생성일: 2026-06-30
+
+### 설계·계획 문서
+2026-06-30T15:26:47 [생성] docs/superpowers/specs/2026-06-30-nc-validation-pipeline-design.md
+2026-06-30T15:32:42 [생성] docs/superpowers/plans/2026-06-30-nc-validation-pipeline.md
+
+### 소스 코드 (src/)
+2026-06-30T15:39:14 [생성] src/__init__.py
+2026-06-30T15:46:06 [생성] src/io_nc.py
+2026-06-30T15:54:35 [생성] src/inspect_nc.py
+2026-06-30T15:59:18 [생성] src/qc.py
+2026-06-30T16:02:51 [생성] src/reproject.py
+2026-06-30T16:23:35 [생성] src/resample.py
+2026-06-30T16:28:26 [생성] src/metrics.py
+2026-06-30T16:38:36 [생성] src/visualize.py
+2026-06-30T16:47:23 [생성] src/pipeline.py
+2026-06-30T16:56:27 [생성] run_validation.py
+
+### 테스트 코드 (tests/)
+2026-06-30T15:41:10 [생성] tests/__init__.py
+2026-06-30T15:41:29 [생성] tests/conftest.py
+2026-06-30T15:41:38 [생성] tests/test_io_nc.py
+2026-06-30T15:54:22 [생성] tests/test_inspect_nc.py
+2026-06-30T15:59:10 [생성] tests/test_qc.py
+2026-06-30T16:02:39 [생성] tests/test_reproject.py
+2026-06-30T16:23:27 [생성] tests/test_resample.py
+2026-06-30T16:28:19 [생성] tests/test_metrics.py
+2026-06-30T16:42:53 [생성] tests/test_visualize.py
+2026-06-30T16:47:32 [생성] tests/test_pipeline.py
+2026-06-30T16:56:35 [생성] tests/test_cli.py
+
+### Git 커밋 이력 (전체)
+2026-06-30 81d5fcd (시작점 — 해커톤 스캐폴딩)
+2026-06-30 37c0255 feat: add project scaffold and io_nc module
+2026-06-30 4836a42 feat: add inspect_nc module with is_regular_grid and inspect
+2026-06-30 2505f2d feat: add qc module for FillValue/valid_range/flag masking
+2026-06-30 b034cd8 feat: add reproject module for WGS84 standardization and region resampling
+2026-06-30 7eb90b7 feat: add resample module for coarse-resolution matching
+2026-06-30 11bdc5e feat: add metrics module for N/Bias/RMSE/MAE/R/R2 computation
+2026-06-30 54e9545 feat: add visualize module for map/scatter/compare table PNG output
+2026-06-30 5c04c22 fix: add file size assertions to scatter and compare table tests
+2026-06-30 c0c3eab feat: add pipeline orchestrator and report.md generation
+2026-06-30 ff0ac41 feat: add CLI entry point and end-to-end integration test
