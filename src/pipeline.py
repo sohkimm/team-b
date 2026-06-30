@@ -1,10 +1,10 @@
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from src.io_nc import open_nc
 from src.inspect_nc import describe
 from src.reproject import to_wgs84
-from src.resample import to_ref_grid
+from src.resample import to_grid, _dx
 from src.metrics import stats
 from src.visualize import make_scatter
 
@@ -12,11 +12,11 @@ from src.visualize import make_scatter
 @dataclass
 class Config:
     aoi: tuple = (24.0, 38.0, 117.0, 131.0)   # lat0, lat1, lon0, lon1
-    ref: str = "auto"                          # "auto"/"a"/"b"
+    ref: str = "auto"                          # "auto"/"a"/"b" — Bias=eval−ref 방향
     var_a: str = None
     var_b: str = None
     time_index: int = 0
-    method: str = "coarsen"
+    grid: str = "fine"   # "fine"=고해상도 격자 비교(저해상도 업샘플) / "coarse"=저해상도 격자 비교(고해상도 다운샘플)
     outdir: str = "results"
 
 
@@ -40,22 +40,38 @@ def run(path_a, path_b, cfg):
     da_a, rep_a = _prep(path_a, cfg.var_a, cfg.time_index)
     da_b, rep_b = _prep(path_b, cfg.var_b, cfg.time_index)
 
+    # ref/eval 역할 (Bias = eval − ref). auto: 저해상도(큰 dlon)=ref.
     if cfg.ref == "a":
         ref_is_a = True
     elif cfg.ref == "b":
         ref_is_a = False
-    else:  # auto: coarser(큰 dlon)가 ref. 동률(<5%)이면 a를 ref.
-        ref_is_a = rep_a.dlon >= rep_b.dlon * 0.95 and rep_a.dlon >= rep_b.dlon
-
-    if ref_is_a:
-        ref_da, eval_da = da_a, da_b
-        ref_name = os.path.basename(path_a); eval_name = os.path.basename(path_b)
     else:
-        ref_da, eval_da = da_b, da_a
-        ref_name = os.path.basename(path_b); eval_name = os.path.basename(path_a)
+        ref_is_a = rep_a.dlon >= rep_b.dlon
+    if ref_is_a:
+        ref_da, ref_rep, ref_name = da_a, rep_a, os.path.basename(path_a)
+        eval_da, eval_rep, eval_name = da_b, rep_b, os.path.basename(path_b)
+    else:
+        ref_da, ref_rep, ref_name = da_b, rep_b, os.path.basename(path_b)
+        eval_da, eval_rep, eval_name = da_a, rep_a, os.path.basename(path_a)
 
-    ref_aoi = _crop_aoi(ref_da, cfg.aoi)
-    eval_on_ref = to_ref_grid(eval_da, ref_aoi, method=cfg.method)
-    s = stats(eval_on_ref, ref_aoi)
-    fig = make_scatter(eval_on_ref, ref_aoi, s)
-    return {"stats": s, "figure": fig, "ref_name": ref_name, "eval_name": eval_name}
+    # 비교 격자 선택. "fine"=더 촘촘한 자료 격자(거친 쪽 업샘플) / "coarse"=더 거친 자료 격자(촘촘한 쪽 다운샘플)
+    if cfg.grid == "fine":
+        target_da = ref_da if ref_rep.dlon < eval_rep.dlon else eval_da
+        resamp = "linear"      # 거친 쪽을 bilinear 업샘플
+    elif cfg.grid == "coarse":
+        target_da = ref_da if ref_rep.dlon > eval_rep.dlon else eval_da
+        resamp = "coarsen"     # 촘촘한 쪽을 블록평균 다운샘플
+    else:
+        raise ValueError(f"cfg.grid는 'fine'/'coarse'만: {cfg.grid}")
+    target = _crop_aoi(target_da, cfg.aoi)
+
+    # 목표인 자료는 그대로(native, 재보간 없음), 다른 하나만 목표 격자로 정합
+    ref_on = target if ref_da is target_da else to_grid(ref_da, target, resamp)
+    eval_on = target if eval_da is target_da else to_grid(eval_da, target, resamp)
+
+    s = stats(eval_on, ref_on)
+    grid_res = round(_dx(target, "x"), 6)
+    title = f"grid={cfg.grid} ({grid_res} deg), resamp={resamp}"
+    fig = make_scatter(eval_on, ref_on, s, title=title)
+    return {"stats": s, "figure": fig, "ref_name": ref_name,
+            "eval_name": eval_name, "grid": cfg.grid, "grid_res": grid_res}

@@ -6,12 +6,38 @@ def _dx(da, dim):
     return float(abs(v[1] - v[0]))
 
 
+def to_grid(src_da, target_da, method="auto"):
+    """src_da를 target_da 격자에 정합한다. target_da는 변형하지 않는다.
+
+    method:
+      "auto"    배율로 자동 — target이 더 거칠면 coarsen(블록평균),
+                더 촘촘하면 linear(bilinear 업샘플), 비슷하면 nearest
+      "coarsen" 정수배 블록평균 (다운샘플 전용)
+      "linear"  bilinear 보간 (업샘플/일반)
+      "nearest" 최근접 스냅
+    """
+    tdx, tdy = _dx(target_da, "x"), _dx(target_da, "y")
+    sdx, sdy = _dx(src_da, "x"), _dx(src_da, "y")
+    if method == "auto":
+        if tdx > sdx * 1.5:
+            method = "coarsen"
+        elif tdx < sdx / 1.5:
+            method = "linear"
+        else:
+            method = "nearest"
+    if method == "coarsen":
+        fx = max(int(round(tdx / sdx)), 1)
+        fy = max(int(round(tdy / sdy)), 1)
+        coarse = src_da.coarsen(x=fx, y=fy, boundary="trim").mean()
+        return coarse.reindex_like(target_da, method="nearest", tolerance=tdy / 2.0)
+    if method in ("linear", "bilinear"):
+        # 저해상도 → 고해상도 업샘플(bilinear). scipy 사용, rasterio 불필요.
+        return src_da.interp_like(target_da, method="linear")
+    if method == "nearest":
+        return src_da.reindex_like(target_da, method="nearest", tolerance=tdy / 2.0)
+    raise ValueError(f"알 수 없는 method={method}")
+
+
 def to_ref_grid(eval_da, ref_da, method="coarsen"):
-    if method != "coarsen":
-        raise NotImplementedError(f"method={method}는 강화 단계(Task 11)에서 추가")
-    fx = int(round(_dx(ref_da, "x") / _dx(eval_da, "x")))
-    fy = int(round(_dx(ref_da, "y") / _dx(eval_da, "y")))
-    fx, fy = max(fx, 1), max(fy, 1)
-    coarse = eval_da.coarsen(x=fx, y=fy, boundary="trim").mean()
-    tol = _dx(ref_da, "y") / 2.0
-    return coarse.reindex_like(ref_da, method="nearest", tolerance=tol)
+    """하위호환 별칭: eval_da를 ref_da 격자로 정합 (기본 coarsen 다운샘플)."""
+    return to_grid(eval_da, ref_da, method=method)
